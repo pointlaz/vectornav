@@ -15,6 +15,16 @@ vectornav:
     # Async output Frequency (Hz)
     # Not sure why this has to be 1Hz to make it work. Very strange.
     AsyncDataOutputFrequency: 1
+
+    # Added 
+    # Choose the type of timestamp you want to use
+    # 0 = ROS Time
+    # 1 = TimeStartup
+    # 2 = TimeSyncIn
+    timestamp_type: 2
+
+
+    
     # Sync control
     syncInMode: 3                    # SYNCINMODE_COUNT
     syncInEdge: 0                    # SYNCINEDGE_RISING
@@ -33,7 +43,7 @@ vectornav:
     errorMode: 1                     # ERRORMODE_SEND
     # Binary output register 1
     BO1:
-      asyncMode: 1                   # send only on port 1 to save serial bandwidth
+      asyncMode: 2                   # send only on port 1 to save serial bandwidth
       rateDivisor: 1                 # 800 Hz
       #
       # TimeStartup
@@ -64,7 +74,7 @@ vectornav:
       # python code: convert to hex via:  hex(int("0001000000001", 2)) -> 0x201
       #
       # commonField: 0x7FFF          # cannot request all fields at full frequency
-      commonField: 0x201             # ask for only bare bones IMU data
+      commonField: 0x2134             # ask for only bare bones IMU data
       timeField: 0x0000              # TIMEGROUP_NONE
       imuField: 0x0000               # IMUGROUP_NONE
       # set gpsField directly in source to enforce or condition

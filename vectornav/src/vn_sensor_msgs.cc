@@ -36,6 +36,10 @@ VnSensorMsgs::VnSensorMsgs(const rclcpp::NodeOptions & options) : Node("vn_senso
     "linear_acceleration_covariance", linear_acceleration_covariance_);
   declare_parameter<std::vector<double>>("magnetic_covariance", magnetic_field_covariance_);
 
+  // Added 
+  //Added 
+  
+  use_imu_with_syncincount_msg = declare_parameter<bool>("use_imu_with_syncincount_msg", true);
   //
   // Publishers
   //
@@ -46,7 +50,11 @@ VnSensorMsgs::VnSensorMsgs(const rclcpp::NodeOptions & options) : Node("vn_senso
   pub_time_syncin_ =
     this->create_publisher<sensor_msgs::msg::TimeReference>("vectornav/time_syncin", 10);
   pub_time_pps_ = this->create_publisher<sensor_msgs::msg::TimeReference>("vectornav/time_pps", 10);
-  pub_imu_ = this->create_publisher<sensor_msgs::msg::Imu>("vectornav/imu", 10);
+  if (use_imu_with_syncincount_msg)
+    pub_imu_with_count_ = this->create_publisher<vectornav_msgs::msg::ImuWithCount>("vectornav/imu", 10); //added
+  else
+    pub_imu_ = this->create_publisher<sensor_msgs::msg::Imu>("vectornav/imu", 10);
+  
   pub_gnss_ = this->create_publisher<sensor_msgs::msg::NavSatFix>("vectornav/gnss", 10);
   pub_imu_uncompensated_ =
     this->create_publisher<sensor_msgs::msg::Imu>("vectornav/imu_uncompensated", 10);
@@ -121,7 +129,6 @@ static void convert_to_enu(
   msg_out.orientation = msg_in->quaternion;
   msg_out.orientation.z = -msg_in->quaternion.z;
 }
-
 /** Convert VN common group data to ROS2 standard message types
    *
    */
@@ -203,10 +210,22 @@ void VnSensorMsgs::sub_vn_common(const vectornav_msgs::msg::CommonGroup::SharedP
     fill_covariance_from_param("angular_velocity_covariance", msg.angular_velocity_covariance);
     fill_covariance_from_param(
       "linear_acceleration_covariance", msg.linear_acceleration_covariance);
+    
+    // Added  : modified to publish imu data with sync in count
+    if (use_imu_with_syncincount_msg)
+    {
+      vectornav_msgs::msg::ImuWithCount msgIMUWithCount; 
+      msgIMUWithCount.imu = msg;
 
-    pub_imu_->publish(msg);
+
+      msgIMUWithCount.count = msg_in->syncincnt;
+      pub_imu_with_count_ -> publish(msgIMUWithCount);
+    
+    }
+    else
+        pub_imu_->publish(msg);
   }
-
+    //pub_imu_->publish(msg);
   // IMU (Uncompensated)
   {
     sensor_msgs::msg::Imu msg;

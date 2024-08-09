@@ -43,6 +43,19 @@ Vectornav::Vectornav(const rclcpp::NodeOptions & options) : Node("vectornav", op
   // Parameters
   //
   // TODO(Dereck): Add constraints to parameters
+  
+  
+
+  
+
+  // Added parameters 
+ // auto async_mode = declare_parameter<int>("async_mode", 2);
+ // user_data.timestamp_type = declare_parameter<int>("timestamp_type", 2);
+  
+  //auto sync_in_mode = declare_parameter<int>("sync_in_mode", 3);   Already declared below as syncInMode
+  //auto sync_in_edge = declare_parameter<int>("sync_in_edge", 0);
+  //auto sync_in_skip_factor = declare_parameter<int>("sync_in_skip_factor", 1);
+
 
   // Device Port
   auto port = declare_parameter<std::string>("port", "/dev/ttyUSB0");
@@ -131,6 +144,10 @@ Vectornav::Vectornav(const rclcpp::NodeOptions & options) : Node("vectornav", op
   declare_parameter<int>("BO3.insField", vn::protocol::uart::InsGroup::INSGROUP_NONE);
   declare_parameter<int>("BO3.gps2Field", vn::protocol::uart::GpsGroup::GPSGROUP_NONE);
 
+  // Added
+  timestamp_type_ = declare_parameter<int>("timestamp_type", 0); 
+
+
   /// TODO(Dereck): Static Settings, read before write to protect flash memory?
   /// User Tag
   /// Magnetometer Compensation (7.2.1)
@@ -148,6 +165,7 @@ Vectornav::Vectornav(const rclcpp::NodeOptions & options) : Node("vectornav", op
   declare_parameter<std::string>("frame_id", "vectornav");
 
   // Composite Data Publisher
+
   pub_common_ =
     this->create_publisher<vectornav_msgs::msg::CommonGroup>("vectornav/raw/common", 10);
   pub_time_ = this->create_publisher<vectornav_msgs::msg::TimeGroup>("vectornav/raw/time", 10);
@@ -160,6 +178,9 @@ Vectornav::Vectornav(const rclcpp::NodeOptions & options) : Node("vectornav", op
 
   sub_vel_aiding_ = this->create_subscription<geometry_msgs::msg::Twist>(
     "vectornav/velocity_aiding", 1, std::bind(&Vectornav::vel_aiding_cb, this, _1));
+
+  //added 
+  subScannerState = this->create_subscription<std_msgs::msg::Int8>("/scanner_state", 1000, std::bind(&Vectornav::callbackScannerState, this, _1));
 
   // magnetic cal action
   server_mag_cal_ = rclcpp_action::create_server<MagCal>(
@@ -179,6 +200,19 @@ Vectornav::Vectornav(const rclcpp::NodeOptions & options) : Node("vectornav", op
     RCLCPP_INFO(get_logger(), "Reconnect Timeout : %ld", reconnect_ms.count());
     reconnect_timer_ =
       create_wall_timer(reconnect_ms, std::bind(&Vectornav::reconnect_timer, this));
+  }
+}
+//added
+void Vectornav::callbackScannerState(const std_msgs::msg::Int8::ConstPtr& scanner_state_msg)
+{
+  // If scanner_state == idling
+  if(scanner_state_msg->data == 0)
+  {
+    // Sleep to wait for the reset
+    usleep(100000);
+    // Reset the SyncInCount, SyncInTime, and SyncOutCount to 0 (useful for the SyncInCount sync with MCU count)
+   // vs.writeSynchronizationStatus(0, 0, 0);
+    vs_->writeSynchronizationStatus(0, 0, 0);
   }
 }
 
@@ -513,7 +547,7 @@ bool Vectornav::connect(const std::string port, const int baud)
   vs_->registerAsyncPacketReceivedHandler(this, Vectornav::AsyncPacketReceivedHandler);
 
   // Default response was too low and retransmit time was too long by default.
-  vs_->setResponseTimeoutMs(1000);  // ms
+  vs_->setResponseTimeoutMs(100);  // ms   // Added  - changed from 1000 to 100
   vs_->setRetransmitDelayMs(50);    // ms
 
   // Check if the requested baud rate is supported
@@ -700,6 +734,11 @@ bool Vectornav::configure_sensor()
 
 rclcpp::Time Vectornav::getTimeStamp(vn::sensors::CompositeData & data)
 {
+  if (timestamp_type_==2  && data.hasTimeSyncIn())
+  {
+    return rclcpp::Time(data.timeSyncIn() * 1e-9); 
+
+  }
   const rclcpp::Time t = now();
   if (!data.hasTimeStartup() || !adjustROSTimeStamp_) {
     return (t);  // cannot or want not adjust time

@@ -29,7 +29,7 @@
 #include <vectornav_msgs/msg/imu_group.hpp>
 #include <vectornav_msgs/msg/ins_group.hpp>
 #include <vectornav_msgs/msg/time_group.hpp>
-
+#include <vectornav_msgs/msg/imu_with_count.hpp>
 namespace vectornav
 {
 class VnSensorMsgs : public rclcpp::Node
@@ -59,6 +59,7 @@ inline static double deg2rad(double in) { return in * M_PI / 180.0; }
   rclcpp::Publisher<sensor_msgs::msg::TimeReference>::SharedPtr pub_time_syncin_;
   rclcpp::Publisher<sensor_msgs::msg::TimeReference>::SharedPtr pub_time_pps_;
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr pub_imu_;
+  rclcpp::Publisher<vectornav_msgs::msg::ImuWithCount>::SharedPtr pub_imu_with_count_;  //Added 
   rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr pub_gnss_;
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr pub_imu_uncompensated_;
   rclcpp::Publisher<sensor_msgs::msg::MagneticField>::SharedPtr pub_magnetic_;
@@ -77,6 +78,8 @@ inline static double deg2rad(double in) { return in * M_PI / 180.0; }
   rclcpp::Subscription<vectornav_msgs::msg::GpsGroup>::SharedPtr sub_vn_gps2_;
 
   bool use_enu = true;
+  bool use_imu_with_syncincount_msg{false};
+  
 
   /// Default orientation Covariance
   const std::vector<double> orientation_covariance_ = {0.0000, 0.0000, 0.0000, 0.0000, 0.0000,

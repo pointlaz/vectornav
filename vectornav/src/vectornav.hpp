@@ -29,7 +29,7 @@
 // VectorNav libvncxx
 #include "vn/compositedata.h"
 #include "vn/sensors.h"
-
+#include <std_msgs/msg/int8.hpp>
 namespace vectornav {
   class Vectornav : public rclcpp::Node
   {
@@ -133,7 +133,24 @@ namespace vectornav {
     /// ROS header time stamp adjustments
     double averageTimeDifference_{0};
     bool adjustROSTimeStamp_{false};
-  
+
+    // added 
+    rclcpp::Subscription<std_msgs::msg::Int8>::SharedPtr subScannerState;
+    void callbackScannerState(const std_msgs::msg::Int8::ConstPtr& scanner_state_msg);
+    int timestamp_type_; 
+
+    
+    vn::protocol::uart::SyncInMode syncInModeSetUp(int sync_in_mode);
+    vn::protocol::uart::SyncInEdge syncInEdgeSetUp(int sync_in_edge);
+    uint16_t syncInSkipFactor(int sync_in_skip_factor);
+    vn::protocol::uart::CommonGroup getCommonGroupSetUp();
+    vn::protocol::uart::TimeGroup getTimeGroupSetUp();
+    vn::protocol::uart::ImuGroup getImuGroupSetUp();
+    vn::protocol::uart::GpsGroup getGpsGroupSetUp();
+    vn::protocol::uart::GpsGroup getGps2GroupSetUp();
+    vn::protocol::uart::AttitudeGroup getAttitudeGroupSetUp();
+    vn::protocol::uart::InsGroup getInsGroupSetUp();
+    // end added 
     // Subscriptions
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_vel_aiding_;
 
